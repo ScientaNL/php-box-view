@@ -7,13 +7,28 @@ use GuzzleHttp\Stream\Stream;
 
 class TempFileStream extends FileStream
 {
+    /** @var FileStream */
+    protected $fileStream;
+
+    /**
+     * @return \SplFileInfo
+     * @throws \RuntimeException
+     */
+    public function getFile()
+    {
+        if ($this->fileStream === null) {
+            throw new \RuntimeException("Temp file must be created first with the createFileStream method.");
+        }
+        return $this->fileStream->getFile();
+    }
+
     /**
      * @param $saveToPath
      * @param bool $overwriteExistingFile
      * @return \SplFileInfo
      * @throws \InvalidArgumentException
      */
-    public function createFile($saveToPath, $overwriteExistingFile = true)
+    public function createFileStream($saveToPath, $overwriteExistingFile = true)
     {
         $saveDir = pathinfo($saveToPath, PATHINFO_DIRNAME);
         if (!is_dir($saveDir) || !is_writable($saveDir)) {
@@ -27,8 +42,8 @@ class TempFileStream extends FileStream
         $this->seek(0);
         Utils::copyToStream($this->stream, $saveTo);
         $this->stream->close();
-        $this->stream = $saveTo;
 
-        return parent::getFile();
+        $this->fileStream = new FileStream($saveTo);
+        return $this->fileStream;
     }
 } 
