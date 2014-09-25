@@ -13,7 +13,7 @@ class TempFileStream extends FileStream
      * @return \SplFileInfo
      * @throws \InvalidArgumentException
      */
-    public function getFile($saveToPath, $overwriteExistingFile = true)
+    public function createFile($saveToPath, $overwriteExistingFile = true)
     {
         $saveDir = pathinfo($saveToPath, PATHINFO_DIRNAME);
         if (!is_dir($saveDir) || !is_writable($saveDir)) {
