@@ -124,10 +124,11 @@ class ViewService
      * @param string $name
      * @param bool $nonSvg
      * @param array $thumbnails
+     * @param null $fileName
+     * @param array $fileHeaders
      * @return Response\Entity\Document
-     * @throws \InvalidArgumentException
      */
-    public function createDocumentFromFile($file, $name = '', $nonSvg = false, array $thumbnails = [])
+    public function createDocumentFromFile($file, $name = '', $nonSvg = false, array $thumbnails = [], $fileName = null, $fileHeaders = [])
     {
         if ($file instanceof \SplFileInfo) {
             $file = $file->getPathname();
@@ -143,7 +144,7 @@ class ViewService
 
         /** @var \GuzzleHttp\Post\PostBody $postBody */
         $postBody = $request->getBody();
-        $postBody->addFile(new PostFile('file', fopen($file, 'r')));
+        $postBody->addFile(new PostFile('file', fopen($file, 'r'), $fileName, $fileHeaders));
         $postBody->setField('non_svg', $nonSvg ? 'true' : 'false');
         $postBody->setField('name', $name);
         $postBody->setField('thumbnails', implode(',', $thumbnails));
