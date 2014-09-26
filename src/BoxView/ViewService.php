@@ -288,6 +288,8 @@ class ViewService
      * @param RequestInterface $request
      * @return \GuzzleHttp\Message\Response
      * @throws Exception\BadRequestException
+     * @throws Exception\NotFoundException
+     * @throws Exception\RemovedException
      * @throws Exception\TooManyRequestsException
      * @throws Exception\RequestException
      */
@@ -304,11 +306,14 @@ class ViewService
                 case '400':
                     throw new BoxException\BadRequestException($e);
                     break;
-                case '429':
-                    throw new BoxException\TooManyRequestsException($e);
-                    break;
                 case '404':
                     throw new BoxException\NotFoundException($e);
+                    break;
+                case '410':
+                    throw new BoxException\RemovedException($e);
+                    break;
+                case '429':
+                    throw new BoxException\TooManyRequestsException($e);
                     break;
                 default:
                     throw new BoxException\RequestException($e);
