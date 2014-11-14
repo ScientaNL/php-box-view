@@ -6,7 +6,7 @@ use GuzzleHttp\Message\RequestInterface;
 use GuzzleHttp\Stream\Stream;
 use GuzzleHttp\Post\PostFile;
 use GuzzleHttp\Client as GuzzleClient;
-use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\RequestException;
 use BoxView\Client\ClientManager as ClientManager;
 use BoxView\Response as BoxResponse;
 use BoxView\Exception as BoxException;
@@ -299,7 +299,7 @@ class ViewService
         {
             return $client->send($request);
         }
-        catch (ClientException $e)
+        catch (RequestException $e)
         {
             switch ($e->getResponse()->getStatusCode())
             {
