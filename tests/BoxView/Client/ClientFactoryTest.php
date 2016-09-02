@@ -24,35 +24,43 @@ class ClientFactoryTest extends \PHPUnit_Framework_TestCase
     {
         $factory = new BoxClient\ClientFactory();
         $client = $factory->createApiClient('fooBar');
-        $this->assertEquals('https://view-api.box.com/1/', $client->getBaseUrl());
+        $uri = $client->getConfig('base_uri');
+        $this->assertInstanceOf('GuzzleHttp\Psr7\Uri', $uri);
+        $this->assertEquals('https://view-api.box.com/1/', $uri->__toString());
     }
 
     public function testDefaultBaseUrlForUploadClient()
     {
         $factory = new BoxClient\ClientFactory();
         $client = $factory->createUploadClient('fooBar');
-        $this->assertEquals('https://upload.view-api.box.com/1/', $client->getBaseUrl());
+        $uri = $client->getConfig('base_uri');
+        $this->assertInstanceOf('GuzzleHttp\Psr7\Uri', $uri);
+        $this->assertEquals('https://upload.view-api.box.com/1/', $uri->__toString());
     }
 
     public function testBaseUrlForApiClient()
     {
         $factory = new BoxClient\ClientFactory('foo://bar');
         $client = $factory->createApiClient('');
-        $this->assertEquals('foo://bar/' . BoxClient\ClientFactory::API_VERSION . '/', $client->getBaseUrl());
+        $uri = $client->getConfig('base_uri');
+        $this->assertInstanceOf('GuzzleHttp\Psr7\Uri', $uri);
+        $this->assertEquals('foo://bar/' . BoxClient\ClientFactory::API_VERSION . '/', $uri->__toString());
     }
 
     public function testBaseUrlForUploadClient()
     {
         $factory = new BoxClient\ClientFactory(null, 'bar://foo');
         $client = $factory->createUploadClient('');
-        $this->assertEquals('bar://foo/' . BoxClient\ClientFactory::API_VERSION . '/', $client->getBaseUrl());
+        $uri = $client->getConfig('base_uri');
+        $this->assertInstanceOf('GuzzleHttp\Psr7\Uri', $uri);
+        $this->assertEquals('bar://foo/' . BoxClient\ClientFactory::API_VERSION . '/', $uri->__toString());
     }
 
     public function testDefaultHeadersForApiClient()
     {
         $apiKey = 'fooBar';
         $factory = new BoxClient\ClientFactory();
-        $headers = $factory->createApiClient($apiKey)->getDefaultOption('headers');
+        $headers = $factory->createApiClient($apiKey)->getConfig('headers');
         $this->assertEquals($headers['Authorization'], 'Token ' . $apiKey);
         $this->assertEquals($headers['Content-Type'], 'application/json');
     }
@@ -61,7 +69,7 @@ class ClientFactoryTest extends \PHPUnit_Framework_TestCase
     {
         $apiKey = 'fooBar';
         $factory = new BoxClient\ClientFactory();
-        $headers = $factory->createUploadClient($apiKey)->getDefaultOption('headers');
+        $headers = $factory->createUploadClient($apiKey)->getConfig('headers');
         $this->assertEquals($headers['Authorization'], 'Token ' . $apiKey);
         $this->assertEquals($headers['Content-Type'], 'multipart/form-data');
     }

@@ -2,7 +2,7 @@
 
 namespace BoxView\Exception;
 
-use GuzzleHttp\Message\Response;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * Class UnexpectedResponseException
@@ -21,26 +21,26 @@ class NotAvailableException extends \RuntimeException
 
     /**
      * @param string $message
-     * @param Response $response
+     * @param ResponseInterface $response
      * @param \DateTime $responseDateTime
      */
-    public function __construct($message, Response $response, \DateTime $responseDateTime)
+    public function __construct($message, ResponseInterface $response, \DateTime $responseDateTime)
     {
         parent::__construct($message, intval($response->getStatusCode()));
         $this->response = $response;
         $this->responseDateTime = $responseDateTime;
-        $this->retrySeconds = $response->hasHeader('Retry-After') ? intval($response->getHeader('Retry-After')) : null;
+        $this->retrySeconds = $response->hasHeader('Retry-After') ? intval($response->getHeaderLine('Retry-After')) : null;
     }
 
     /**
      * Factory method to create a new exception with a normalized error message
      *
-     * @param Response $response Response received
+     * @param ResponseInterface $response Response received
      * @param \DateTime $responseDateTime
      *
      * @return self
      */
-    public static function create(Response $response, \DateTime $responseDateTime)
+    public static function create(ResponseInterface $response, \DateTime $responseDateTime)
     {
         $label = 'Unsuccessful response';
         $message = $label . ' [status code] ' . $response->getStatusCode()

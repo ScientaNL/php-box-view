@@ -2,9 +2,6 @@
 
 namespace BoxView;
 
-use GuzzleHttp\Message\RequestInterface;
-use GuzzleHttp\Stream\Stream;
-use GuzzleHttp\Post\PostFile;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
 use BoxView\Client\ClientManager as ClientManager;
@@ -47,10 +44,11 @@ class ViewService
             'created_after' => $createdAfter ? $createdBefore->getTimestamp() : null,
         ];
 
-        $client = $this->clientManager->getApiClient();
-        $request = $client->createRequest('GET', 'documents', ['query' => $queryData]);
-
-        return $this->responseHandler->getDocuments($this->sendRequest($client, $request));
+        return $this->responseHandler->getDocuments($this->sendRequest(
+            $this->clientManager->getApiClient(),
+            'GET', 'documents',
+            ['query' => $queryData]
+        ));
     }
 
     /**
@@ -59,10 +57,10 @@ class ViewService
      */
     public function getDocument($documentId)
     {
-        $client = $this->clientManager->getApiClient();
-        $request = $client->createRequest('GET', ['documents/{id}', ['id' => $documentId]]);
-
-        return $this->responseHandler->getDocument($this->sendRequest($client, $request));
+        return $this->responseHandler->getDocument($this->sendRequest(
+            $this->clientManager->getApiClient(),
+            'GET', sprintf('documents/%s', $documentId)
+        ));
     }
 
     /**
@@ -84,10 +82,11 @@ class ViewService
     {
         $putData = [ 'name' => $name ];
 
-        $client = $this->clientManager->getApiClient();
-        $request = $client->createRequest('PUT', ['documents/{id}', ['id' => $documentId]], ['json' => $putData]);
-
-        return $this->responseHandler->getDocument($this->sendRequest($client, $request));
+        return $this->responseHandler->getDocument($this->sendRequest(
+            $this->clientManager->getApiClient(),
+            'PUT', sprintf('documents/%s', $documentId),
+            ['json' => $putData]
+        ));
     }
 
     /**
@@ -96,9 +95,10 @@ class ViewService
      */
     public function deleteDocument($documentId)
     {
-        $client = $this->clientManager->getApiClient();
-        $request = $client->createRequest('DELETE', ['documents/{id}', ['id' => $documentId]]);
-        return $this->responseHandler->documentDeleted($this->sendRequest($client, $request));
+        return $this->responseHandler->documentDeleted($this->sendRequest(
+            $this->clientManager->getApiClient(),
+            'DELETE', sprintf('documents/%s', $documentId)
+        ));
     }
 
     /**
@@ -139,17 +139,33 @@ class ViewService
             );
         }
 
-        $client = $this->clientManager->getUploadClient();
-        $request = $client->createRequest('POST', 'documents');
+        if ($fileName && !isset(array_change_key_case($fileHeaders)['content-disposition'])) {
+            $fileHeaders['Content-Disposition'] = 'form-data; name="' . $fileName .'"';
+        }
 
-        /** @var \GuzzleHttp\Post\PostBody $postBody */
-        $postBody = $request->getBody();
-        $postBody->addFile(new PostFile('file', fopen($file, 'r'), $fileName, $fileHeaders));
-        $postBody->setField('non_svg', $nonSvg ? 'true' : 'false');
-        $postBody->setField('name', $name);
-        $postBody->setField('thumbnails', implode(',', $thumbnails));
-
-        return $this->responseHandler->getDocumentForCreation($this->sendRequest($client, $request));
+        return $this->responseHandler->getDocumentForCreation($this->sendRequest(
+            $this->clientManager->getUploadClient(),
+            'POST', 'documents',
+            ['multipart' => [
+                [
+                    'name'     => 'file',
+                    'contents' => fopen($file, 'r'),
+                    'headers'  => $fileHeaders
+                ],
+                [
+                    'name'     => 'non_svg',
+                    'contents' => $nonSvg ? 'true' : 'false'
+                ],
+                [
+                    'name'     => 'name',
+                    'contents' => $name
+                ],
+                [
+                    'name'     => 'thumbnails',
+                    'contents' => implode(',', $thumbnails)
+                ]
+            ]]
+        ));
     }
 
     /**
@@ -168,10 +184,11 @@ class ViewService
             'thumbnails' => implode(',', $thumbnails)
         ];
 
-        $client = $this->clientManager->getApiClient();
-        $request = $client->createRequest('POST', 'documents', ['json' => $postData]);
-
-        return $this->responseHandler->getDocumentForCreation($this->sendRequest($client, $request));
+        return $this->responseHandler->getDocumentForCreation($this->sendRequest(
+            $this->clientManager->getApiClient(),
+            'POST', 'documents',
+            ['json' => $postData]
+        ));
     }
 
     /**
@@ -179,7 +196,7 @@ class ViewService
      * @param $width
      * @param $height
      * @param null $saveToPath
-     * @return \GuzzleHttp\Stream\StreamInterface
+     * @return \Psr\Http\Message\StreamInterface
      * @throws \InvalidArgumentException
      */
     public function getDocumentThumbnail($documentId, $width, $height, $saveToPath = null)
@@ -193,27 +210,27 @@ class ViewService
 
         if ($saveToPath !== null) {
             $saveDir = pathinfo($saveToPath, PATHINFO_DIRNAME);
-            if (!is_dir($saveDir) || !is_writable($saveDir)) {
+            if ( !is_dir($saveDir) || file_exists($saveToPath) || !is_writable($saveDir) ) {
                 throw new \InvalidArgumentException(
                     "The path to save the file to is not writable"
                 );
             }
-            $resource = fopen($saveToPath, 'w');
-            $stream = Stream::factory($resource);
-            $requestOptions['save_to'] = $stream;
+            $resource = fopen($saveToPath, 'x+');
+            $requestOptions['sink'] = $resource;
         }
 
-        $client = $this->clientManager->getApiClient();
-        $request = $client->createRequest('GET', ['documents/{id}/thumbnail', ['id' => $documentId]], $requestOptions);
-
-        return $this->responseHandler->getDocumentFileStream($this->sendRequest($client, $request));
+        return $this->responseHandler->getBodyStream($this->sendRequest(
+            $this->clientManager->getApiClient(),
+            'GET', sprintf('documents/%s/thumbnail', $documentId),
+            $requestOptions
+        ));
     }
 
     /**
      * @param $documentId
      * @param string $extension
      * @param null $saveToPath
-     * @return \GuzzleHttp\Stream\StreamInterface
+     * @return \Psr\Http\Message\StreamInterface
      * @throws \InvalidArgumentException
      */
     public function getDocumentContent($documentId, $extension = '', $saveToPath = null)
@@ -225,24 +242,20 @@ class ViewService
         $requestOptions = [];
         if ($saveToPath !== null) {
             $saveDir = pathinfo($saveToPath, PATHINFO_DIRNAME);
-            if (!is_dir($saveDir) || !is_writable($saveDir)) {
+            if ( !is_dir($saveDir) || file_exists($saveToPath) || !is_writable($saveDir) ) {
                 throw new \InvalidArgumentException(
                     "The path to save the file to is not writable"
                 );
             }
-            $resource = fopen($saveToPath, 'w');
-            $stream = Stream::factory($resource);
-            $requestOptions['save_to'] = $stream;
+            $resource = fopen($saveToPath, 'x+');
+            $requestOptions['sink'] = $resource;
         }
 
-        $client = $this->clientManager->getApiClient();
-        $request = $client->createRequest(
-            'GET',
-            [ 'documents/{id}/content{extension}', [ 'id' => $documentId, 'extension' => $extension ] ],
+        return $this->responseHandler->getBodyStream($this->sendRequest(
+            $this->clientManager->getApiClient(),
+            'GET', sprintf('documents/%s/content%s', $documentId, $extension),
             $requestOptions
-        );
-
-        return $this->responseHandler->getDocumentFileStream($this->sendRequest($client, $request));
+        ));
     }
 
     /**
@@ -251,9 +264,10 @@ class ViewService
      */
     public function getDocumentMimeType($documentId)
     {
-        $client = $this->clientManager->getApiClient();
-        $request = $client->createRequest('HEAD', [ 'documents/{id}/content', [ 'id' => $documentId] ]);
-        return $this->responseHandler->getContentType($this->sendRequest($client, $request));
+        return $this->responseHandler->getContentType($this->sendRequest(
+            $this->clientManager->getApiClient(),
+            'HEAD', sprintf('documents/%s/content', $documentId)
+        ));
     }
 
     /**
@@ -277,27 +291,30 @@ class ViewService
             $postData['duration'] = $expiration;
         }
 
-        $client = $this->clientManager->getApiClient();
-        $request = $client->createRequest('POST', 'sessions', ['json' => $postData]);
-
-        return $this->responseHandler->getSession($this->sendRequest($client, $request));
+        return $this->responseHandler->getSession($this->sendRequest(
+            $this->clientManager->getApiClient(),
+            'POST', 'sessions',
+            ['json' => $postData]
+        ));
     }
 
     /**
      * @param GuzzleClient $client
-     * @param RequestInterface $request
-     * @return \GuzzleHttp\Message\Response
+     * @param $method
+     * @param $uri
+     * @param array $options
+     * @return mixed|\Psr\Http\Message\ResponseInterface
      * @throws Exception\BadRequestException
      * @throws Exception\NotFoundException
      * @throws Exception\RemovedException
      * @throws Exception\TooManyRequestsException
      * @throws Exception\RequestException
      */
-    protected function sendRequest(GuzzleClient $client, RequestInterface $request)
+    protected function sendRequest(GuzzleClient $client, $method, $uri, array $options = [])
     {
         try
         {
-            return $client->send($request);
+            return $client->request($method, $uri, $options);
         }
         catch (RequestException $e)
         {

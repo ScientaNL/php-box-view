@@ -4,8 +4,8 @@ namespace BoxViewTest\Exception;
 
 use BoxView\Exception as BoxException;
 use GuzzleHttp\Exception\ClientException;
-use GuzzleHttp\Message\Request;
-use GuzzleHttp\Message\Response;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Psr7\Response;
 
 class RequestExceptionTest extends \PHPUnit_Framework_TestCase
 {
