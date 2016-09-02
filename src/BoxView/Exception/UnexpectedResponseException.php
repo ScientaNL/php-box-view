@@ -2,7 +2,7 @@
 
 namespace BoxView\Exception;
 
-use GuzzleHttp\Message\Response;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * Class UnexpectedResponseException
@@ -15,9 +15,9 @@ class UnexpectedResponseException extends \RuntimeException
 
     /**
      * @param string $message
-     * @param Response $response
+     * @param ResponseInterface $response
      */
-    public function __construct($message = '', Response $response)
+    public function __construct($message = '', ResponseInterface $response)
     {
         parent::__construct($message, intval($response->getStatusCode()));
         $this->response = $response;
@@ -26,11 +26,11 @@ class UnexpectedResponseException extends \RuntimeException
     /**
      * Factory method to create a new exception with a normalized error message
      *
-     * @param Response $response Response received
+     * @param ResponseInterface $response Response received
      *
      * @return self
      */
-    public static function create(Response $response)
+    public static function create(ResponseInterface $response)
     {
         $label = 'Unsuccessful response';
         $message = $label . ' [status code] ' . $response->getStatusCode()

@@ -2,21 +2,21 @@
 
 namespace BoxView\Exception;
 
-use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
 
 /**
  * Class RequestException
  * @package BoxView\Exception
  */
-class RequestException extends ClientException
+class RequestException extends GuzzleRequestException
 {
-    /** @var ClientException */
+    /** @var GuzzleRequestException */
     protected $guzzleException;
 
     /**
-     * @param ClientException $exception
+     * @param GuzzleRequestException $exception
      */
-    public function __construct(ClientException $exception)
+    public function __construct(GuzzleRequestException $exception)
     {
         $this->guzzleException = $exception;
         parent::__construct(
@@ -28,7 +28,7 @@ class RequestException extends ClientException
     }
 
     /**
-     * @return ClientException
+     * @return GuzzleRequestException
      */
     public function getGuzzleException()
     {

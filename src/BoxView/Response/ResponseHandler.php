@@ -3,10 +3,12 @@
 namespace BoxView\Response;
 
 use Doctrine\Common\Collections\ArrayCollection;
-use GuzzleHttp\Message\Response;
-use GuzzleHttp\Stream\Stream as GuzzleStream;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 use BoxView\Exception\UnexpectedResponseException;
 use BoxView\Exception\NotAvailableException;
+use BoxView\Stream\FileStream;
+use BoxView\Stream\TempStream;
 
 /**
  * Class ResponseHandler
@@ -15,16 +17,17 @@ use BoxView\Exception\NotAvailableException;
 class ResponseHandler
 {
     /**
-     * @param Response $response
+     * @param ResponseInterface $response
      * @return ArrayCollection
      */
-    public function getDocuments(Response $response)
+    public function getDocuments(ResponseInterface $response)
     {
         if ($response->getStatusCode() != '200') {
             $this->handleUnexpectedResponse($response);
         }
 
-        $documentData = $response->json()['document_collection'];
+        $json = \GuzzleHttp\json_decode($response->getBody(), true);
+        $documentData = $json['document_collection'];
         $jsonDocuments = isset($documentData['entries']) ? $documentData['entries'] : [];
 
         $documents = new ArrayCollection();
@@ -37,48 +40,48 @@ class ResponseHandler
     }
 
     /**
-     * @param Response $response
+     * @param ResponseInterface $response
      * @return Entity\Document
      */
-    public function getDocument(Response $response)
+    public function getDocument(ResponseInterface $response)
     {
         $statusCode = $response->getStatusCode();
         if ($statusCode != '200') {
             $this->handleUnexpectedResponse($response);
         }
 
-        return new Entity\Document($response->json());
+        return new Entity\Document(\GuzzleHttp\json_decode($response->getBody(), true));
     }
 
     /**
-     * @param Response $response
+     * @param ResponseInterface $response
      * @return Entity\Document
      */
-    public function getDocumentForCreation(Response $response)
+    public function getDocumentForCreation(ResponseInterface $response)
     {
         $statusCode = $response->getStatusCode();
         if ($statusCode != '200' && $statusCode != '201' && $statusCode != '202') {
             $this->handleUnexpectedResponse($response);
         }
 
-        return new Entity\Document($response->json());
+        return new Entity\Document(\GuzzleHttp\json_decode($response->getBody(), true));
     }
 
     /**
-     * @param Response $response
+     * @param ResponseInterface $response
      * @return bool
      */
-    public function documentDeleted(Response $response)
+    public function documentDeleted(ResponseInterface $response)
     {
         return $response->getStatusCode() == '204';
     }
 
     /**
-     * @param Response $response
-     * @return \GuzzleHttp\Stream\StreamInterface
+     * @param ResponseInterface $response
+     * @return StreamInterface
      * @throws \BoxView\Exception\NotAvailableException
      */
-    public function getDocumentFileStream(Response $response)
+    public function getBodyStream(ResponseInterface $response)
     {
         $statusCode = $response->getStatusCode();
         if ($statusCode != '200' && $statusCode != '202') {
@@ -89,17 +92,16 @@ class ResponseHandler
             throw NotAvailableException::create($response, new \DateTime());
         }
 
-        $serverMimeType = $response->hasHeader('Content-Type') ? $response->getHeader('Content-Type') : null;
+        $serverMimeType = $response->hasHeader('Content-Type') ? $response->getHeaderLine('Content-Type') : null;
 
-        /** @var GuzzleStream $stream */
         $stream = $response->getBody();
         switch (strtolower($stream->getMetadata('wrapper_type')))
         {
             case 'php':
-                $responseStream = new Stream\TempFileStream($stream, $serverMimeType);
+                $responseStream = new TempStream($stream, $serverMimeType);
                 break;
             case 'plainfile':
-                $responseStream = new Stream\FileStream($stream, $serverMimeType);
+                $responseStream = new FileStream($stream, $serverMimeType);
                 break;
             default:
                 $responseStream = $stream;
@@ -109,11 +111,11 @@ class ResponseHandler
     }
 
     /**
-     * @param Response $response
+     * @param ResponseInterface $response
      * @return Entity\Document
      * @throws \BoxView\Exception\NotAvailableException
      */
-    public function getSession(Response $response)
+    public function getSession(ResponseInterface $response)
     {
         $statusCode = $response->getStatusCode();
         if ($statusCode != '201' && $statusCode != '202') {
@@ -124,23 +126,23 @@ class ResponseHandler
             throw NotAvailableException::create($response, new \DateTime());
         }
 
-        return new Entity\Session($response->json());
+        return new Entity\Session(\GuzzleHttp\json_decode($response->getBody(), true));
     }
 
     /**
-     * @param Response $response
+     * @param ResponseInterface $response
      * @return null|string
      */
-    public function getContentType(Response $response)
+    public function getContentType(ResponseInterface $response)
     {
-        return $response->hasHeader('Content-Type') ? $response->getHeader('Content-Type') : null;
+        return $response->hasHeader('Content-Type') ? $response->getHeaderLine('Content-Type') : null;
     }
 
     /**
-     * @param Response $response
+     * @param ResponseInterface $response
      * @throws \BoxView\Exception\UnexpectedResponseException
      */
-    protected function handleUnexpectedResponse(Response $response)
+    protected function handleUnexpectedResponse(ResponseInterface $response)
     {
         throw UnexpectedResponseException::create($response);
     }

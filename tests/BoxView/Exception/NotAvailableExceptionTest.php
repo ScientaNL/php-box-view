@@ -3,7 +3,7 @@
 namespace BoxViewTest\Exception;
 
 use BoxView\Exception as BoxException;
-use GuzzleHttp\Message\Response as GuzzleResponse;
+use GuzzleHttp\Psr7\Response as GuzzleResponse;
 
 class NotAvailableExceptionTest extends \PHPUnit_Framework_TestCase
 {
@@ -33,6 +33,22 @@ class NotAvailableExceptionTest extends \PHPUnit_Framework_TestCase
         $exception = new BoxException\NotAvailableException('', $response, new \DateTime());
 
         $this->assertSame(5, $exception->getSecondsForRetry());
+    }
+
+    public function testNoSecondsForRetry()
+    {
+        $response = new GuzzleResponse(202);
+        $exception = new BoxException\NotAvailableException('', $response, new \DateTime());
+
+        $this->assertSame(null, $exception->getSecondsForRetry());
+    }
+
+    public function testFaultySecondsForRetry()
+    {
+        $response = new GuzzleResponse(202, ['Retry-After' => '5', 'Retry-After' => '9']);
+        $exception = new BoxException\NotAvailableException('', $response, new \DateTime());
+
+        $this->assertSame(9, $exception->getSecondsForRetry());
     }
 
     public function testDateTimeForRetry()
