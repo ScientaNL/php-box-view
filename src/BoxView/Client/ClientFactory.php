@@ -32,31 +32,35 @@ class ClientFactory
 
     /**
      * @param $apiKey
+     * @param array $options
      * @return GuzzleClient
      */
-    public function createApiClient($apiKey)
+    public function createApiClient($apiKey, $options = [])
     {
-        return new GuzzleClient([
+        $config = [
             'base_uri' => $this->baseApiUrl . sprintf('/%s/', static::API_VERSION),
             'headers' => [
                 'Authorization' => 'Token ' . $apiKey,
                 'Content-Type' => 'application/json'
             ]
-        ]);
+        ];
+        return new GuzzleClient($config + $options);
     }
 
     /**
      * @param $apiKey
+     * @param array $options
      * @return GuzzleClient
      */
-    public function createUploadClient($apiKey)
+    public function createUploadClient($apiKey, $options = [])
     {
-        return new GuzzleClient([
+        $config = [
             'base_uri' => $this->baseUploadUrl . sprintf('/%s/', static::API_VERSION),
             'headers' => [
                 'Authorization' => 'Token ' . $apiKey,
                 'Content-Type' => 'multipart/form-data'
             ]
-        ]);
+        ];
+        return new GuzzleClient($config + $options);
     }
 } 
