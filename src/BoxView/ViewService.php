@@ -318,7 +318,8 @@ class ViewService
         }
         catch (RequestException $e)
         {
-            switch ($e->getResponse()->getStatusCode())
+            $statusCode = $e->hasResponse() ? $e->getResponse()->getStatusCode() : null;
+            switch ($statusCode)
             {
                 case '400':
                     throw new BoxException\BadRequestException($e);
