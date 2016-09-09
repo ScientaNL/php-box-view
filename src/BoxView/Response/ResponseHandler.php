@@ -131,6 +131,15 @@ class ResponseHandler
 
     /**
      * @param ResponseInterface $response
+     * @return int
+     */
+    public function getStatusCode(ResponseInterface $response)
+    {
+        return $response->getStatusCode();
+    }
+
+    /**
+     * @param ResponseInterface $response
      * @return null|string
      */
     public function getContentType(ResponseInterface $response)
