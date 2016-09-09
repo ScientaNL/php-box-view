@@ -257,6 +257,23 @@ class ViewService
 
     /**
      * @param $documentId
+     * @param string $extension
+     * @return int
+     */
+    public function checkDocumentContent($documentId, $extension = '')
+    {
+        if (!empty($extension) && strpos($extension, '.') !== 0) {
+            $extension = '.' . $extension;
+        }
+
+        return $this->responseHandler->getStatusCode($this->sendRequest(
+            $this->clientManager->getApiClient(),
+            'HEAD', sprintf('documents/%s/content%s', $documentId, $extension)
+        ));
+    }
+
+    /**
+     * @param $documentId
      * @return null|string
      */
     public function getDocumentMimeType($documentId)
