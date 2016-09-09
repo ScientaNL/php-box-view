@@ -139,16 +139,13 @@ class ViewService
             );
         }
 
-        if ($fileName && !isset(array_change_key_case($fileHeaders)['content-disposition'])) {
-            $fileHeaders['Content-Disposition'] = 'form-data; name="' . $fileName .'"';
-        }
-
         return $this->responseHandler->getDocumentForCreation($this->sendRequest(
             $this->clientManager->getUploadClient(),
             'POST', 'documents',
             ['multipart' => [
                 [
                     'name'     => 'file',
+                    'filename' => $fileName,
                     'contents' => fopen($file, 'r'),
                     'headers'  => $fileHeaders
                 ],
