@@ -335,16 +335,16 @@ class ViewService
             $statusCode = $e->hasResponse() ? $e->getResponse()->getStatusCode() : null;
             switch ($statusCode)
             {
-                case '400':
+                case 400:
                     throw new BoxException\BadRequestException($e);
                     break;
-                case '404':
+                case 404:
                     throw new BoxException\NotFoundException($e);
                     break;
-                case '410':
+                case 410:
                     throw new BoxException\RemovedException($e);
                     break;
-                case '429':
+                case 429:
                     throw new BoxException\TooManyRequestsException($e);
                     break;
                 default:
